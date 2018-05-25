@@ -16,9 +16,6 @@ int Grade[100];
 int Visited[100];
 int Stiva[100];
 int init(){
-    for(int i = 0; i < 10000; i++){
-        cout<<C1[i]<<" ";
-    }
     cout<<endl;
     for(int i = 0; i < 100; i++){
         Stiva[i] = -1;
@@ -28,6 +25,7 @@ int init(){
             Grade[i] += Graf[j][i];
         }
     }
+    return 0;
 }
 int refresh(){
     for(int i = 0; i < nc2; i++){
@@ -35,6 +33,7 @@ int refresh(){
         Visited[i] = 0;
     }
     nc2 = 0;
+    return 0;
 }
 int top(int S[]){
     int a = 0;
@@ -49,27 +48,30 @@ int push(int i){
     C2[a] = i;
     Grade[i]--;
     nc2++;
+    return 0;
 }
 int pop(){
     Stiva[top(Stiva)-1] = -1;
+    return 0;
 }
 int killAll(){
     while(top(Stiva)){
         pop();
     }
+    return 0;
 }
 int insertion(int k){
     if(k < nc1){
-        for(int i = 0; i < nc2; i++){
+        for(int i = 1; i < nc2; i++){
             C1[i+k+nc2-1] = C1[i+k];
         }
     }
     for(int i = 0; i < nc2; i++){
         C1[k+i] = C2[i];
+        nc1++;
     }
-    nc1 += nc2;
     cout<<"C1: ";
-    for(int i = 0; i < nc1; i++){
+    for(int i = 0; i < nc1-1; i++){
         cout<<C1[i]+1<<" ";
     }
     cout<<endl;
@@ -78,6 +80,7 @@ int insertion(int k){
         cout<<C2[i]+1<<" ";
     }
     cout<<endl;
+    return 0;
 }
 int DFS(int node){
     push(node);
@@ -91,12 +94,7 @@ int DFS(int node){
                 push(i);
                 Grade[i]--;
                 if(Graf[i][node] == 1 && Stiva[1] != i){
-                    cout<<"stiva: "<<Stiva[1]<<endl;
-                    C2[top(Stiva)] = node;
-                    cout<<"i: "<<i<<endl;
-                    cout<<"top(Stiva): "<<top(Stiva)<<endl;
-                    cout<<"node: "<<node<<endl;
-                    nc2++;
+                    push(node);
                     killAll();
                 }
                 break;
@@ -106,21 +104,25 @@ int DFS(int node){
             }
         }
     }
+    return 0;
 }
-int euler(){
-    DFS(1);
-    insertion(0);
+int euler(int i){
+    DFS(i);
+    insertion(i);
     refresh();
-    DFS(1);
-    insertion(0);
-    refresh();
-
+    for(int j = 0; j < nc1; j++){
+        if(Grade[C1[j]] > 0){
+            euler(C1[j]);
+        }
+    }
+    return 0;
 }
 int main(){
     init();
-    euler();
-    for(int i = 0; i < 10000; i++){
-        cout<<C1[i]<<" ";
+    for(int i = 0; i < n; i++){
+        cout<<Visited[i]<<" ";
     }
+    cout<<endl;
+    euler(0);
     cout<<endl;
 }

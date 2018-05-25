@@ -18,6 +18,7 @@ int init(){
         Stiva[i][0] = -1;
         Stiva[i][1] = 0;
     }
+    return 0;
 }
 int top(int S[100][2]){
     int a = 0;
@@ -29,9 +30,11 @@ int top(int S[100][2]){
 int push(int i){
     int a = top(Stiva);
     Stiva[a][0] = i;
+    return 0;
 }
 int pop(){
     Stiva[top(Stiva)-1][0] = -1;
+    return 0;
 }
 int DFS(){
     int g;
@@ -39,7 +42,7 @@ int DFS(){
     while(top(Stiva)){
         g = Stiva[top(Stiva)-1][0];
         h = Stiva[top(Stiva) - 1][1];
-        for(h; h <= n; h++){
+        for(; h <= n; h++){
             if(Graf[g][h] != 0 && h < n){
                 if(Visited[h] == 1){
                     cout<<"Graful este ciclic..";
@@ -56,9 +59,11 @@ int DFS(){
         }
     }
     cout<<"Graful este aciclic!";
+    return 0;
 }
 int main(){
     init();
     push(0);
     DFS();
+    return 0;
 }
