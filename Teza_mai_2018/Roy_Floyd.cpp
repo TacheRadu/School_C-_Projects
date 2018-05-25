@@ -1,4 +1,6 @@
-
+/* E de pe net, nu stiu cat de bun e, dar aparent structura e asa cum a zis el
+    Mie nu-mi recunoaste libraria conio.h( deci nu recunoaste getch-ul ) , vezi daca merge la tine.
+*/
 #include <iostream>
 #include <conio.h>
 using namespace std;
