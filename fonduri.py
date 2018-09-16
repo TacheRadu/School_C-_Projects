@@ -24,23 +24,6 @@ def getConnection():
         db = psycopg2.connect("dbname='fondul_clasei' user='johnnyt' host='localhost'")
         return db
 
-def insertIntoTable(self, suma, nume):
-    user = nume 
-    try:
-        int_val = int(suma) # or flt_val = float(str_float)
-    except ValueError:
-        return -1
-    
-    while user.find(' ') != -1:
-        user = user[0].lower() + user[1:user.find(' ')] + '_' + user[user.find(' ') + 1].lower() + user[user.find(' ') + 2:]
-    db = getConnection()
-    cur = db.cursor()
-    print 'it got into insertIntoTable, with user = ' + user
-    cur.execute("INSERT INTO " + user + " (suma, data) VALUES(%(int)s, current_date);", int_val)
-    db.commit()
-    db.close()
-    updateTable(nume, user)
-
 class TabbedApp(TabbedPanel):
     pass
 
