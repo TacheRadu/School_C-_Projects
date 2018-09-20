@@ -38,7 +38,6 @@ class IncasarePanel(TabbedPanelItem):
     submit = Button(text = 'Submit', size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.5, 'center_y': 0.5})
     suma = TextInput(hint_text='Suma', multiline = False, size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.25, 'center_y': 0.85})
     def updateTable(self, nume, user):
-        print 'it should have inserted into the users table by now...'
         db = getConnection()
         cur = db.cursor()
         cur.execute("UPDATE lista SET suma = (SELECT SUM(suma) FROM " + user + ") WHERE nume = '" + nume + "';")
@@ -55,7 +54,7 @@ class IncasarePanel(TabbedPanelItem):
         try:
             db = getConnection()
             cur = db.cursor()
-            cur.execute("INSERT INTO " + user + " (suma, data) VALUES(%s, current_date);", [suma])
+            cur.execute("INSERT INTO " + user + " (id, suma, data) VALUES(nextval('" + user + "_sequence'), %s, current_date);", [suma])
             db.commit()
             self.popup.separator_color = (0, 1, 0, 1)
             self.popup.title = 'Success'
@@ -77,7 +76,7 @@ class IncasarePanel(TabbedPanelItem):
         cur.execute("""SELECT * FROM lista
                         ORDER BY nume ASC;""")
         for row in cur.fetchall():
-            btn = Button(text= row[0], size_hint_y=None, height=44)
+            btn = Button(text= row[1], size_hint_y=None, height=44)
             btn.bind(on_release=lambda btn: self.dropdown.select(btn.text))
             btn.x = 0
             btn.y = 0
@@ -103,7 +102,7 @@ class CheltuialaPanel(TabbedPanelItem):
         try:
             db = getConnection()
             cur = db.cursor()
-            cur.execute("INSERT INTO cheltuieli(suma, data) VALUES (" + suma + ", current_date);")
+            cur.execute("INSERT INTO cheltuieli(id, suma, data) VALUES (nextval('cheltuieli_sequence'), " + suma + ", current_date);")
             db.commit()
             self.popup.separator_color = (0, 1, 0, 1)
             self.popup.title = 'Success'
@@ -134,4 +133,4 @@ class TabbedPanelApp(App):
         return self.fonduri
 
 if __name__ == '__main__':
-    print TabbedPanelApp().run()
+    TabbedPanelApp().run()
