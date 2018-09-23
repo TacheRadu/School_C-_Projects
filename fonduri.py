@@ -10,6 +10,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.stacklayout import StackLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.tabbedpanel import TabbedPanelItem
@@ -28,11 +29,33 @@ Builder.load_string("""
     height: self.minimum_height
     row_default_height: 40
     cols:3
+<BackgroundLabel>:
+    background_color: 1, 0, 0, .3
+    canvas.before:
+        Color:
+            rgba: self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+<RefreshButton>:
+    text: "B1"
+    Image:
+        source: 'refresh-icon.png'
+        y: self.parent.y
+        x: self.parent.x
+        size: 40, 40
+        allow_stretch: True
 """)
 def getConnection():
 
         db = psycopg2.connect("dbname='fondul_clasei' user='johnnyt' host='localhost'")
         return db
+class RefreshButton(Button):
+    pass
+class BackgroundLabel(Label):
+    def choosecolor(self):
+        self.background_color = (0, 1, 0, .4)
+    pass
 class DBEntries(GridLayout):
     pass
 class TabbedApp(TabbedPanel):
@@ -101,11 +124,21 @@ class IncasarePanel(TabbedPanelItem):
     def build(self):
         return self.incasare
 class ListaPanel(TabbedPanelItem):
+    updateState = ''
     lista = TabbedPanelItem(text = 'Lista contributii')
     bigView = BoxLayout(orientation = 'vertical')
     top_buttons = GridLayout(cols = 3, row_default_height=40, size_hint=(1, None), height = 40)
     db_entries = DBEntries()
     scroll = ScrollView()
+    def update(self, instance):
+        if(self.updateState == ''):
+            self.db_entries.clear_widgets()
+            db = getConnection()
+            cur = db.cursor()
+            cur.execute("SELECT * FROM lista")
+            for row in cur.fetchall():
+                for col in row[1:]:
+                    self.db_entries.add_widget(BackgroundLabel(text = str(col)))
     def __init__(self):
         self.top_buttons.add_widget(Button(text = 'Nume'))
         self.top_buttons.add_widget(Button(text = 'Suma'))
@@ -115,7 +148,9 @@ class ListaPanel(TabbedPanelItem):
         cur.execute("SELECT * FROM lista;")
         for row in cur.fetchall():
             for col in row[1:]:
-                self.db_entries.add_widget(Label(text = str(col)))
+                self.db_entries.add_widget(BackgroundLabel(text = str(col)))
+        self.db_entries.add_widget(BackgroundLabel(text = ''))
+        self.bigView.add_widget(RefreshButton(on_press = self.update, text = '', size_hint = (None, None), height = 40, width = 40))
         self.bigView.add_widget(self.top_buttons)
         self.scroll.add_widget(self.db_entries)
         self.bigView.add_widget(self.scroll)
