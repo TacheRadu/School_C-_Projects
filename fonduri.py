@@ -7,6 +7,9 @@ from kivy.uix. label import Label
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
 from kivy.uix.textinput import TextInput
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.tabbedpanel import TabbedPanelItem
@@ -19,13 +22,19 @@ Builder.load_string("""
     size_hint: 1.0, 1.0
     pos_hint: {'center_x': .5, 'center_y': .5}
     do_default_tab: False
-    
+<DBEntries>:
+    orientation: "vertical"
+    size_hint_y: None
+    height: self.minimum_height
+    row_default_height: 40
+    cols:3
 """)
 def getConnection():
 
         db = psycopg2.connect("dbname='fondul_clasei' user='johnnyt' host='localhost'")
         return db
-
+class DBEntries(GridLayout):
+    pass
 class TabbedApp(TabbedPanel):
     pass
 
@@ -91,6 +100,29 @@ class IncasarePanel(TabbedPanelItem):
         self.incasare.add_widget(self.incasare_box)
     def build(self):
         return self.incasare
+class ListaPanel(TabbedPanelItem):
+    lista = TabbedPanelItem(text = 'Lista contributii')
+    bigView = BoxLayout(orientation = 'vertical')
+    top_buttons = GridLayout(cols = 3, row_default_height=40, size_hint=(1, None), height = 40)
+    db_entries = DBEntries()
+    scroll = ScrollView()
+    def __init__(self):
+        self.top_buttons.add_widget(Button(text = 'Nume'))
+        self.top_buttons.add_widget(Button(text = 'Suma'))
+        self.top_buttons.add_widget(Button(text = 'Data'))
+        db = getConnection()
+        cur = db.cursor()
+        cur.execute("SELECT * FROM lista;")
+        for row in cur.fetchall():
+            for col in row[1:]:
+                self.db_entries.add_widget(Label(text = str(col)))
+        self.bigView.add_widget(self.top_buttons)
+        self.scroll.add_widget(self.db_entries)
+        self.bigView.add_widget(self.scroll)
+        self.lista.add_widget(self.bigView)
+
+
+
 class CheltuialaPanel(TabbedPanelItem):
     submit = Button(text = 'Submit', size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.6, 'center_y': 0.5})
     suma = TextInput(hint_text='Suma', multiline = False, size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.3, 'center_y': 0.5})
@@ -126,10 +158,12 @@ class CheltuialaPanel(TabbedPanelItem):
 class TabbedPanelApp(App):
     incasarePanel = IncasarePanel()
     cheltuialaPanel = CheltuialaPanel()
+    listaPanel = ListaPanel()
     fonduri = TabbedApp()
     def build(self):
         self.fonduri.add_widget(self.incasarePanel.incasare)
         self.fonduri.add_widget(self.cheltuialaPanel.cheltuiala)
+        self.fonduri.add_widget(self.listaPanel.lista)
         return self.fonduri
 
 if __name__ == '__main__':
