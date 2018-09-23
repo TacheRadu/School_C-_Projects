@@ -38,12 +38,11 @@ Builder.load_string("""
             pos: self.pos
             size: self.size
 <RefreshButton>:
-    text: "B1"
     Image:
         source: 'refresh-icon.png'
         y: self.parent.y
         x: self.parent.x
-        size: 40, 40
+        size: self.parent.width, self.parent.height
         allow_stretch: True
 """)
 def getConnection():
@@ -130,27 +129,37 @@ class ListaPanel(TabbedPanelItem):
     top_buttons = GridLayout(cols = 3, row_default_height=40, size_hint=(1, None), height = 40)
     db_entries = DBEntries()
     scroll = ScrollView()
-    def update(self, instance):
+    def updateByButton(self, button):
+        if(self.updateState != button[0].lower() + button[1:] + "_ASC"):
+            self.updateState = button[0].lower() + button[1:] + "_ASC"
+        else:
+            self.updateState = button[0].lower() + button[1:] + "_DESC"
+        self.updateView()
+    def updateView(self):
+        self.db_entries.clear_widgets()
+        db = getConnection()
+        cur = db.cursor()
         if(self.updateState == ''):
-            self.db_entries.clear_widgets()
-            db = getConnection()
-            cur = db.cursor()
             cur.execute("SELECT * FROM lista")
             for row in cur.fetchall():
                 for col in row[1:]:
                     self.db_entries.add_widget(BackgroundLabel(text = str(col)))
+        elif(self.updateState[0:4] != 'data'):
+            cur.execute("SELECT * FROM lista ORDER BY " + self.updateState[0:4] + " " + self.updateState[5:] + ";")
+            for row in cur.fetchall():
+                for col in row[1:]:
+                    self.db_entries.add_widget(BackgroundLabel(text = str(col)))
+        else:
+            cur.execute("SELECT * FROM lista ORDER BY ultima_contributie " + self.updateState[5:] + ";")
+            for row in cur.fetchall():
+                for col in row[1:]:
+                    self.db_entries.add_widget(BackgroundLabel(text = str(col)))
     def __init__(self):
-        self.top_buttons.add_widget(Button(text = 'Nume'))
-        self.top_buttons.add_widget(Button(text = 'Suma'))
-        self.top_buttons.add_widget(Button(text = 'Data'))
-        db = getConnection()
-        cur = db.cursor()
-        cur.execute("SELECT * FROM lista;")
-        for row in cur.fetchall():
-            for col in row[1:]:
-                self.db_entries.add_widget(BackgroundLabel(text = str(col)))
-        self.db_entries.add_widget(BackgroundLabel(text = ''))
-        self.bigView.add_widget(RefreshButton(on_press = self.update, text = '', size_hint = (None, None), height = 40, width = 40))
+        self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Nume'))
+        self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Suma'))
+        self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Data'))
+        self.updateView()
+        self.bigView.add_widget(RefreshButton(on_press = lambda btn: self.updateView(), text = '', size_hint = (None, None), height = 40, width = 40))
         self.bigView.add_widget(self.top_buttons)
         self.scroll.add_widget(self.db_entries)
         self.bigView.add_widget(self.scroll)
