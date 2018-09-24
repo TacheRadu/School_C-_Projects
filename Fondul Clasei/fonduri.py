@@ -40,9 +40,9 @@ Builder.load_string("""
 <RefreshButton>:
     Image:
         source: 'refresh-icon.png'
-        y: self.parent.y
-        x: self.parent.x
-        size: self.parent.width, self.parent.height
+        y: self.parent.y + 5
+        x: self.parent.x + 5 
+        size: self.parent.width - 10, self.parent.height - 10
         allow_stretch: True
 """)
 def getConnection():
@@ -125,7 +125,7 @@ class IncasarePanel(TabbedPanelItem):
 class ListaPanel(TabbedPanelItem):
     updateState = ''
     lista = TabbedPanelItem(text = 'Lista contributii')
-    bigView = BoxLayout(orientation = 'vertical')
+    bigView = StackLayout(orientation = 'rl-tb')
     top_buttons = GridLayout(cols = 3, row_default_height=40, size_hint=(1, None), height = 40)
     db_entries = DBEntries()
     scroll = ScrollView()
