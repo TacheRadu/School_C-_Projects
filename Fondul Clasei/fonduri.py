@@ -89,7 +89,7 @@ class IncasarePanel(TabbedPanelItem):
         db = getConnection()
         cur = db.cursor()
         cur.execute("UPDATE lista SET suma = (SELECT SUM(suma) FROM " + user + ") WHERE nume = '" + nume + "';")
-        cur.execute("UPDATE lista SET ultima_contributie = (SELECT data FROM " + user + " ORDER BY data DESC LIMIT 1) WHERE nume = '" + nume + "' ;")
+        cur.execute("UPDATE lista SET ultima_contributie = (SELECT MAX(data) FROM " + user + ") WHERE nume = '" + nume + "' ;")
         db.commit()
         db.close()
 
@@ -175,7 +175,7 @@ class ListaPanel(TabbedPanelItem):
         cur.execute("SELECT SUM(suma) FROM cheltuieli;")
         cheltuieli = cur.fetchall()[0][0]
         self.db_entries.add_widget(SpendingsLabel(text = str(cheltuieli)))
-        cur.execute("SELECT data FROM cheltuieli ORDER BY data DESC LIMIT 1;")
+        cur.execute("SELECT MAX(data) FROM cheltuieli;")
         self.db_entries.add_widget(SpendingsLabel(text = str(cur.fetchall()[0][0])))
         self.db_entries.add_widget(TotalLabel(text = 'Total'))
         cur.execute("SELECT SUM(suma) FROM lista;")
