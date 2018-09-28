@@ -1,13 +1,12 @@
 import psycopg2
 from kivy.app import App
-from functools import partial
 from kivy.lang import Builder
 from kivy.uix.popup import Popup
 from kivy.uix. label import Label
 from kivy.uix.button import Button
+from kivy.core.window import Window
 from kivy.uix.dropdown import DropDown
 from kivy.uix.textinput import TextInput
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.stacklayout import StackLayout
@@ -29,8 +28,24 @@ Builder.load_string("""
     height: self.minimum_height
     row_default_height: 40
     cols:3
-<BackgroundLabel>:
-    background_color: 1, 0, 0, .3
+<ContributionLabel>:
+    background_color: 0, 1, 0, .3
+    canvas.before:
+        Color:
+            rgba: self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+<SpendingsLabel>:
+    background_color: 1, 0, 0, .5
+    canvas.before:
+        Color:
+            rgba: self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+<TotalLabel>:
+    background_color: 0, 0, 1, .3
     canvas.before:
         Color:
             rgba: self.background_color
@@ -41,7 +56,7 @@ Builder.load_string("""
     Image:
         source: 'refresh-icon.png'
         y: self.parent.y + 5
-        x: self.parent.x + 5 
+        x: self.parent.x + 5
         size: self.parent.width - 10, self.parent.height - 10
         allow_stretch: True
 """)
@@ -51,9 +66,11 @@ def getConnection():
         return db
 class RefreshButton(Button):
     pass
-class BackgroundLabel(Label):
-    def choosecolor(self):
-        self.background_color = (0, 1, 0, .4)
+class ContributionLabel(Label):
+    pass
+class SpendingsLabel(Label):
+    pass
+class TotalLabel(Label):
     pass
 class DBEntries(GridLayout):
     pass
@@ -128,7 +145,7 @@ class ListaPanel(TabbedPanelItem):
     bigView = StackLayout(orientation = 'rl-tb')
     top_buttons = GridLayout(cols = 3, row_default_height=40, size_hint=(1, None), height = 40)
     db_entries = DBEntries()
-    scroll = ScrollView()
+    scroll = ScrollView(size_hint=(1, None), size=(Window.width, Window.height - 126)) # to make up for the tabs above and the padding
     def updateByButton(self, button):
         if(self.updateState != button[0].lower() + button[1:] + "_ASC"):
             self.updateState = button[0].lower() + button[1:] + "_ASC"
@@ -140,27 +157,46 @@ class ListaPanel(TabbedPanelItem):
         db = getConnection()
         cur = db.cursor()
         if(self.updateState == ''):
-            cur.execute("SELECT * FROM lista")
+            cur.execute("SELECT * FROM lista;")
             for row in cur.fetchall():
                 for col in row[1:]:
-                    self.db_entries.add_widget(BackgroundLabel(text = str(col)))
+                    self.db_entries.add_widget(ContributionLabel(text = str(col)))
         elif(self.updateState[0:4] != 'data'):
             cur.execute("SELECT * FROM lista ORDER BY " + self.updateState[0:4] + " " + self.updateState[5:] + ";")
             for row in cur.fetchall():
                 for col in row[1:]:
-                    self.db_entries.add_widget(BackgroundLabel(text = str(col)))
+                    self.db_entries.add_widget(ContributionLabel(text = str(col)))
         else:
             cur.execute("SELECT * FROM lista ORDER BY ultima_contributie " + self.updateState[5:] + ";")
             for row in cur.fetchall():
                 for col in row[1:]:
-                    self.db_entries.add_widget(BackgroundLabel(text = str(col)))
+                    self.db_entries.add_widget(ContributionLabel(text = str(col)))
+        self.db_entries.add_widget(SpendingsLabel(text = 'Cheltuieli'))
+        cur.execute("SELECT SUM(suma) FROM cheltuieli;")
+        cheltuieli = cur.fetchall()[0][0]
+        self.db_entries.add_widget(SpendingsLabel(text = str(cheltuieli)))
+        cur.execute("SELECT data FROM cheltuieli ORDER BY data DESC LIMIT 1;")
+        self.db_entries.add_widget(SpendingsLabel(text = str(cur.fetchall()[0][0])))
+        self.db_entries.add_widget(TotalLabel(text = 'Total'))
+        cur.execute("SELECT SUM(suma) FROM lista;")
+        self.db_entries.add_widget(TotalLabel(text = str(cur.fetchall()[0][0] - cheltuieli)))
+        cur.execute("""SELECT MAX(data) FROM (
+            SELECT data FROM cheltuieli 
+            WHERE data = (
+                SELECT MAX(data) FROM cheltuieli)
+            UNION
+            SELECT ultima_contributie AS data FROM lista 
+            WHERE ultima_contributie = (
+                SELECT MAX(ultima_contributie) FROM lista)) AS latest_date;"""
+        )
+        self.db_entries.add_widget(TotalLabel(text = str(cur.fetchall()[0][0])))
     def __init__(self):
         self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Nume'))
         self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Suma'))
         self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Data'))
-        self.updateView()
         self.bigView.add_widget(RefreshButton(on_press = lambda btn: self.updateView(), text = '', size_hint = (None, None), height = 40, width = 40))
         self.bigView.add_widget(self.top_buttons)
+        self.updateView()
         self.scroll.add_widget(self.db_entries)
         self.bigView.add_widget(self.scroll)
         self.lista.add_widget(self.bigView)
