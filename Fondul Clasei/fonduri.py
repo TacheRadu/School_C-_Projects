@@ -27,7 +27,6 @@ Builder.load_string("""
     size_hint_y: None
     height: self.minimum_height
     row_default_height: 40
-    cols:3
 <ContributionLabel>:
     background_color: 0, 1, 0, .3
     canvas.before:
@@ -160,7 +159,7 @@ class ListaPanel(TabbedPanelItem):
     lista = TabbedPanelItem(text = 'Lista contributii')
     bigView = StackLayout(orientation = 'rl-tb')
     top_buttons = GridLayout(cols = 3, row_default_height=40, size_hint=(1, None), height = 40)
-    db_entries = DBEntries()
+    db_entries = DBEntries(cols = 3)
     scroll = ScrollView(size_hint=(1, None), size=(Window.width, Window.height - 126)) # to make up for the tabs above and the padding
     
     def updateByButton(self, button):
@@ -261,15 +260,60 @@ class CheltuialaPanel(TabbedPanelItem):
     
     def build(self):
         pass
+
+class ListaCheltuieliPanel(TabbedPanelItem):
+    updateState = ''
+    lista = TabbedPanelItem(text = 'Lista cheltuieli')
+    bigView = StackLayout(orientation = 'rl-tb')
+    top_buttons = GridLayout(cols = 2, row_default_height=40, size_hint=(1, None), height = 40)
+    db_entries = DBEntries(cols = 2)
+    scroll = ScrollView(size_hint=(1, None), size=(Window.width, Window.height - 126))
+    def updateByButton(self, button):
+        if(self.updateState != button[0].lower() + button[1:] + "_ASC"):
+            self.updateState = button[0].lower() + button[1:] + "_ASC"
+        else:
+            self.updateState = button[0].lower() + button[1:] + "_DESC"
+        self.updateView()
+    
+    def updateView(self):
+        self.db_entries.clear_widgets()
+        db = getConnection()
+        cur = db.cursor()
+        if(self.updateState == ''):
+            cur.execute("SELECT * FROM cheltuieli;")
+            for row in cur.fetchall():
+                for col in row[1:]:
+                    self.db_entries.add_widget(SpendingsLabel(text = str(col)))
+        else:
+            cur.execute("SELECT * FROM cheltuieli ORDER BY " + self.updateState[0:4] + " " + self.updateState[5:] + ";")
+            for row in cur.fetchall():
+                for col in row[1:]:
+                    self.db_entries.add_widget(SpendingsLabel(text = str(col)))
+        self.db_entries.add_widget(TotalLabel(text = 'Total'))
+        cur.execute("SELECT SUM(suma) FROM cheltuieli;")
+        self.db_entries.add_widget(TotalLabel(text = str(cur.fetchall()[0][0])))
+
+    def __init__(self):
+        self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Suma'))
+        self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Data'))
+        self.updateView()
+        self.bigView.add_widget(RefreshButton(on_press = lambda btn: self.updateView(), text = '', size_hint = (None, None), height = 40, width = 40))
+        self.bigView.add_widget(self.top_buttons)
+        self.bigView.add_widget(self.db_entries)
+        self.lista.add_widget(self.bigView)
+
 class TabbedPanelApp(App):
     incasarePanel = IncasarePanel()
     cheltuialaPanel = CheltuialaPanel()
     listaPanel = ListaPanel()
+    listaCheltuieliPanel = ListaCheltuieliPanel()
     fonduri = TabbedApp()
+    
     def build(self):
         self.fonduri.add_widget(self.incasarePanel.incasare)
         self.fonduri.add_widget(self.cheltuialaPanel.cheltuiala)
         self.fonduri.add_widget(self.listaPanel.lista)
+        self.fonduri.add_widget(self.listaCheltuieliPanel.lista)
         return self.fonduri
 
 if __name__ == '__main__':
