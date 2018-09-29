@@ -97,23 +97,29 @@ class IncasarePanel(TabbedPanelItem):
         nume = self.mainbutton.text
         suma = self.suma.text
         user = nume 
-        while user.find(' ') != -1:
-            user = user[0].lower() + user[1:user.find(' ')] + '_' + user[user.find(' ') + 1].lower() + user[user.find(' ') + 2:]
-        try:
-            db = getConnection()
-            cur = db.cursor()
-            cur.execute("INSERT INTO " + user + " (id, suma, data) VALUES(nextval('" + user + "_sequence'), %s, current_date);", [suma])
-            db.commit()
-            self.popup.separator_color = (0, 1, 0, 1)
-            self.popup.title = 'Success'
-            self.popup.content = Label(text = 'Updated Database successfully.')
-        except psycopg2.DatabaseError:
+        if nume != 'Nume contribuitor':
+            while user.find(' ') != -1:
+                user = user[0].lower() + user[1:user.find(' ')] + '_' + user[user.find(' ') + 1].lower() + user[user.find(' ') + 2:]
+            try:
+                db = getConnection()
+                cur = db.cursor()
+                cur.execute("INSERT INTO " + user + " (id, suma, data) VALUES(nextval('" + user + "_sequence'), %s, current_date);", [suma])
+                db.commit()
+                self.popup.separator_color = (0, 1, 0, 1)
+                self.popup.title = 'Success'
+                self.popup.content = Label(text = 'Updated Database successfully.')
+            except psycopg2.DatabaseError:
+                self.popup.separator_color = (1, 0, 0, 1)
+                self.popup.title = 'Error'
+                self.popup.content = Label(text = 'Failed to update Database.')
+            finally:
+                db.close()
+                self.updateTable(nume, user)
+                self.popup.open()
+        else:
             self.popup.separator_color = (1, 0, 0, 1)
             self.popup.title = 'Error'
-            self.popup.content = Label(text = 'Failed to update Database.')
-        finally:
-            db.close()
-            self.updateTable(nume, user)
+            self.popup.content = Label(text = 'Select a user first.')
             self.popup.open()
         
     def __init__(self):
