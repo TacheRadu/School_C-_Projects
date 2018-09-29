@@ -60,20 +60,27 @@ Builder.load_string("""
         size: self.parent.width - 10, self.parent.height - 10
         allow_stretch: True
 """)
+
 def getConnection():
 
         db = psycopg2.connect("dbname='fondul_clasei' user='johnnyt' host='localhost'")
         return db
+
 class RefreshButton(Button):
     pass
+
 class ContributionLabel(Label):
     pass
+
 class SpendingsLabel(Label):
     pass
+
 class TotalLabel(Label):
     pass
+
 class DBEntries(GridLayout):
     pass
+
 class TabbedApp(TabbedPanel):
     pass
 
@@ -85,6 +92,7 @@ class IncasarePanel(TabbedPanelItem):
     popup = Popup(separator_color = (0, 1, 0, 1), title = 'Success', size_hint =(0.9, 0.15), pos_hint = {'center_x': 0.5, 'center_y': 0.1}, content = Label(text = 'Database updated successfully.'))
     submit = Button(text = 'Submit', size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.5, 'center_y': 0.5})
     suma = TextInput(hint_text='Suma', multiline = False, size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.25, 'center_y': 0.85})
+    
     def updateTable(self, nume, user):
         db = getConnection()
         cur = db.cursor()
@@ -143,8 +151,10 @@ class IncasarePanel(TabbedPanelItem):
         self.incasare_box.add_widget(self.suma)
         self.incasare_box.add_widget(self.submit)
         self.incasare.add_widget(self.incasare_box)
+    
     def build(self):
         return self.incasare
+
 class ListaPanel(TabbedPanelItem):
     updateState = ''
     lista = TabbedPanelItem(text = 'Lista contributii')
@@ -152,12 +162,14 @@ class ListaPanel(TabbedPanelItem):
     top_buttons = GridLayout(cols = 3, row_default_height=40, size_hint=(1, None), height = 40)
     db_entries = DBEntries()
     scroll = ScrollView(size_hint=(1, None), size=(Window.width, Window.height - 126)) # to make up for the tabs above and the padding
+    
     def updateByButton(self, button):
         if(self.updateState != button[0].lower() + button[1:] + "_ASC"):
             self.updateState = button[0].lower() + button[1:] + "_ASC"
         else:
             self.updateState = button[0].lower() + button[1:] + "_DESC"
         self.updateView()
+    
     def updateView(self):
         self.db_entries.clear_widgets()
         db = getConnection()
@@ -196,6 +208,7 @@ class ListaPanel(TabbedPanelItem):
                 SELECT MAX(ultima_contributie) FROM lista)) AS latest_date;"""
         )
         self.db_entries.add_widget(TotalLabel(text = str(cur.fetchall()[0][0])))
+    
     def __init__(self):
         self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Nume'))
         self.top_buttons.add_widget(Button(on_press = lambda btn: self.updateByButton(btn.text), text = 'Suma'))
@@ -207,31 +220,37 @@ class ListaPanel(TabbedPanelItem):
         self.bigView.add_widget(self.scroll)
         self.lista.add_widget(self.bigView)
 
-
-
 class CheltuialaPanel(TabbedPanelItem):
     submit = Button(text = 'Submit', size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.6, 'center_y': 0.5})
     suma = TextInput(hint_text='Suma', multiline = False, size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.3, 'center_y': 0.5})
     cheltuiala = TabbedPanelItem()
     cheltuialaBox = FloatLayout()
     popup = Popup(separator_color = (0, 1, 0, 1),title = 'Success', size_hint =(0.9, 0.15), pos_hint = {'center_x': 0.5, 'center_y': 0.1}, content = Label(text = 'Updated Database successfully.'))
+    
     def insertIntoTable(self, instance):
         suma = self.suma.text
-        try:
-            db = getConnection()
-            cur = db.cursor()
-            cur.execute("INSERT INTO cheltuieli(id, suma, data) VALUES (nextval('cheltuieli_sequence'), " + suma + ", current_date);")
-            db.commit()
-            self.popup.separator_color = (0, 1, 0, 1)
-            self.popup.title = 'Success'
-            self.popup.content = Label(text = 'Updated Database successfully.')
-        except psycopg2.DatabaseError:
+        if suma != '':
+            try:
+                db = getConnection()
+                cur = db.cursor()
+                cur.execute("INSERT INTO cheltuieli(id, suma, data) VALUES (nextval('cheltuieli_sequence'), " + suma + ", current_date);")
+                db.commit()
+                self.popup.separator_color = (0, 1, 0, 1)
+                self.popup.title = 'Success'
+                self.popup.content = Label(text = 'Updated Database successfully.')
+            except psycopg2.DatabaseError:
+                self.popup.separator_color = (1, 0, 0, 1)
+                self.popup.title = 'Error'
+                self.popup.content = Label(text = 'Failed to update Database.')
+            finally:
+                db.close()
+                self.popup.open()
+        else:
             self.popup.separator_color = (1, 0, 0, 1)
             self.popup.title = 'Error'
-            self.popup.content = Label(text = 'Failed to update Database.')
-        finally:
-            db.close()
+            self.popup.content = Label(text = 'Insert a value first.')
             self.popup.open()
+
     def __init__(self):
         self.cheltuiala.text = 'Cheltuiala noua'
         self.cheltuiala.text_size = (self.cheltuiala.width, self.cheltuiala.height)
@@ -239,6 +258,7 @@ class CheltuialaPanel(TabbedPanelItem):
         self.cheltuialaBox.add_widget(self.suma)
         self.cheltuialaBox.add_widget(self.submit)
         self.cheltuiala.add_widget(self.cheltuialaBox)
+    
     def build(self):
         pass
 class TabbedPanelApp(App):
