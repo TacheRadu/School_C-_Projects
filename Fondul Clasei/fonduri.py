@@ -252,7 +252,6 @@ class CheltuialaPanel(TabbedPanelItem):
 
     def __init__(self):
         self.cheltuiala.text = 'Cheltuiala noua'
-        self.cheltuiala.text_size = (self.cheltuiala.width, self.cheltuiala.height)
         self.submit.bind(on_release = self.insertIntoTable)
         self.cheltuialaBox.add_widget(self.suma)
         self.cheltuialaBox.add_widget(self.submit)
@@ -302,18 +301,66 @@ class ListaCheltuieliPanel(TabbedPanelItem):
         self.bigView.add_widget(self.db_entries)
         self.lista.add_widget(self.bigView)
 
+class ListaIndividuala(TabbedPanelItem):
+    panel = TabbedPanelItem(text = 'Lista Contributii Individuale')
+    bigView = StackLayout(orientation = 'rl-tb')
+    refresh = RefreshButton(text = '', size_hint = (None, None), height = 40, width = 40)
+    contribuitor = Button(text='Nume contribuitor', size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.625, 'center_y': 0.85})
+    dropdown = DropDown()
+    topButtons = DBEntries(cols = 2)
+    dbEntries = DBEntries(cols = 2)
+    scroll = ScrollView()
+    
+    def updateView(self, btn):
+        pass
+
+    def setDropDown(self):
+        db = getConnection()
+        cur = db.cursor()
+        cur.execute("""SELECT * FROM lista
+                        ORDER BY nume ASC;""")
+        for row in cur.fetchall():
+            btn = Button(text= row[1], size_hint_y=None, height=40)
+            btn.bind(on_release=lambda btn: self.dropdown.select(btn.text))
+            btn.x = 0
+            btn.y = 0
+            self.dropdown.add_widget(btn)
+        db.close()
+        self.contribuitor.bind(on_release=self.dropdown.open)
+        self.dropdown.bind(on_select=lambda instance, x: setattr(self.contribuitor, 'text', x))
+    def __init__(self):
+        self.panel.text_size = (None, self.panel.height)
+        self.refresh.bind(on_press = self.updateView)
+        self.setDropDown()
+        self.topButtons.add_widget(Button(text = 'Suma'))
+        self.topButtons.add_widget(Button(text = 'Data'))
+        self.bigView.add_widget(self.refresh)
+        self.bigView.add_widget(self.contribuitor)
+        self.bigView.add_widget(self.topButtons)
+        self.bigView.add_widget(self.dbEntries)
+        self.panel.add_widget(self.bigView)
+
+
 class TabbedPanelApp(App):
     incasarePanel = IncasarePanel()
     cheltuialaPanel = CheltuialaPanel()
     listaPanel = ListaPanel()
     listaCheltuieliPanel = ListaCheltuieliPanel()
+    listaIndividuala  = ListaIndividuala()
     fonduri = TabbedApp()
     
+    def resizeWindow(self, window, width, height):
+        self.listaPanel.scroll.size = (width, height - 126)
+        self.listaCheltuieliPanel.scroll.size = (width, height - 126)
+        self.listaIndividuala.scroll.size = (width, height - 126)
+
     def build(self):
+        Window.bind(on_resize = self.resizeWindow)
         self.fonduri.add_widget(self.incasarePanel.incasare)
         self.fonduri.add_widget(self.cheltuialaPanel.cheltuiala)
         self.fonduri.add_widget(self.listaPanel.lista)
         self.fonduri.add_widget(self.listaCheltuieliPanel.lista)
+        self.fonduri.add_widget(self.listaIndividuala.panel)
         return self.fonduri
 
 if __name__ == '__main__':
