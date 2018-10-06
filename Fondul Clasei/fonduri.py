@@ -88,7 +88,7 @@ class IncasarePanel(TabbedPanelItem):
     dropdown = DropDown()
     incasare = TabbedPanelItem()
     incasare_box = FloatLayout()
-    popup = Popup(separator_color = (0, 1, 0, 1), title = 'Success', size_hint =(0.9, 0.15), pos_hint = {'center_x': 0.5, 'center_y': 0.1}, content = Label(text = 'Database updated successfully.'))
+    popup = Popup(size_hint =(0.9, 0.15), pos_hint = {'center_x': 0.5, 'center_y': 0.1})
     submit = Button(text = 'Submit', size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.5, 'center_y': 0.5})
     suma = TextInput(hint_text='Suma', multiline = False, size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.25, 'center_y': 0.85})
     
@@ -302,8 +302,10 @@ class ListaCheltuieliPanel(TabbedPanelItem):
         self.lista.add_widget(self.bigView)
 
 class ListaIndividuala(TabbedPanelItem):
+    updateState = ''
     panel = TabbedPanelItem(text = 'Lista Contributii Individuale')
     bigView = StackLayout(orientation = 'rl-tb')
+    popup = Popup(size_hint =(0.9, 0.15), pos_hint = {'center_x': 0.5, 'center_y': 0.1})
     refresh = RefreshButton(text = '', size_hint = (None, None), height = 40, width = 40)
     contribuitor = Button(text='Nume contribuitor', size_hint = (0.25, None), height = 40, pos_hint = {'center_x': 0.625, 'center_y': 0.85})
     dropdown = DropDown()
@@ -311,8 +313,48 @@ class ListaIndividuala(TabbedPanelItem):
     dbEntries = DBEntries(cols = 2)
     scroll = ScrollView()
     
+    def setContribuitorName(self, name):
+        self.contribuitor.text = name
+        self.updateList()
+    
     def updateView(self, btn):
-        pass
+        if btn.text != '':
+            if self.updateState != btn.text[0].lower() + btn.text[1:] + '_ASC':
+                self.updateState = btn.text[0].lower() + btn.text[1:] + '_ASC'
+            else:
+                self.updateState = btn.text[0].lower() + btn.text[1:] + '_DESC'
+        self.updateList()
+
+    def updateList(self):
+        db = getConnection()
+        cur = db.cursor()
+        nume = self.contribuitor.text
+        user = nume[0].lower() + nume[1:nume.find(' ')] + '_' + nume[nume.find(' ') + 1].lower() + nume[nume.find(' ') + 2:]
+        if nume != 'Nume contribuitor':
+            self.dbEntries.clear_widgets()
+            if self.updateState != '':
+                cur.execute("SELECT * FROM " + user + " ORDER BY " + self.updateState[0:4] + " " + self.updateState[5:])
+                for row in cur.fetchall():
+                    self.dbEntries.add_widget(ContributionLabel(text = str(row[1])))
+                    self.dbEntries.add_widget(ContributionLabel(text = str(row[2])))
+                self.dbEntries.add_widget(TotalLabel(text = 'Total'))
+                cur.execute("SELECT SUM(suma) FROM " + user)
+                self.dbEntries.add_widget(TotalLabel(text = str(cur.fetchall()[0][0])))
+            else:
+                cur.execute('SELECT * FROM ' + user + ' ORDER BY data ASC')
+                for row in cur.fetchall():
+                    self.dbEntries.add_widget(ContributionLabel(text = str(row[1])))
+                    self.dbEntries.add_widget(ContributionLabel(text = str(row[2])))
+                self.dbEntries.add_widget(TotalLabel(text = 'Total'))
+                cur.execute("SELECT SUM(suma) FROM " + user)
+                self.dbEntries.add_widget(TotalLabel(text = str(cur.fetchall()[0][0])))
+        else:
+            self.popup.separator_color = (1, 0, 0, 1)
+            self.popup.title = 'Error'
+            self.popup.content = Label(text = 'Select a user first')
+            self.popup.open()
+        db.close()
+
 
     def setDropDown(self):
         db = getConnection()
@@ -327,13 +369,13 @@ class ListaIndividuala(TabbedPanelItem):
             self.dropdown.add_widget(btn)
         db.close()
         self.contribuitor.bind(on_release=self.dropdown.open)
-        self.dropdown.bind(on_select=lambda instance, x: setattr(self.contribuitor, 'text', x))
+        self.dropdown.bind(on_select=lambda instance, x: self.setContribuitorName(x))
     def __init__(self):
         self.panel.text_size = (None, self.panel.height)
         self.refresh.bind(on_press = self.updateView)
         self.setDropDown()
-        self.topButtons.add_widget(Button(text = 'Suma'))
-        self.topButtons.add_widget(Button(text = 'Data'))
+        self.topButtons.add_widget(Button(text = 'Suma', on_press = self.updateView))
+        self.topButtons.add_widget(Button(text = 'Data', on_press = self.updateView))
         self.bigView.add_widget(self.refresh)
         self.bigView.add_widget(self.contribuitor)
         self.bigView.add_widget(self.topButtons)
