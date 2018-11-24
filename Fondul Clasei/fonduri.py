@@ -370,6 +370,7 @@ class ListaIndividuala(TabbedPanelItem):
         db.close()
         self.contribuitor.bind(on_release=self.dropdown.open)
         self.dropdown.bind(on_select=lambda instance, x: self.setContribuitorName(x))
+    
     def __init__(self):
         self.panel.text_size = (None, self.panel.height)
         self.refresh.bind(on_press = self.updateView)
