@@ -1,48 +1,30 @@
-#include <map>
-#include <queue>
-#include <vector>
-#include <fstream>
-#include <algorithm>
+#include <bits/stdc++.h>
 
 using namespace std;
 
-bool cmp(const vector<int> &a, const vector<int> &b){
-    if(a[0] == b[0]){
-        return a[1] < b[1];
-    }
-    return a[0] < b[0];
-}
 
-map<int, unsigned long long> res;
-map<int, bool> is_Confirmed;
-queue<int> comenzi;
-vector< vector<int> > scaun;
+const int N = 100010;
+ifstream f("ramen.in");
+ofstream g("ramen.out");
+
+int n, d, i, pos, tim, res[N];
+set< tuple<int, int, int> > people;
+set< int > orders;
 
 int main(){
-    fstream f("ramen.in", fstream::in);
-    int n, d;
     f >> n >> d;
-    scaun = vector< vector<int> >(n, vector<int>(2));
     for(int i = 0; i < n; i++){
-        int a, b;
-        f >> a >> b;
-        scaun[i][0] = b;
-        scaun[i][1] = a;
-        comenzi.push(a + d);
+        f >> tim >> pos;
+        people.insert(make_tuple(pos, tim, i));
+        orders.insert(tim);
     }
-    sort(scaun.begin(), scaun.end(), cmp);
-    while(comenzi.size()){
-        for(auto i : scaun){
-            if((i[0] + comenzi.front() >= i[1]) && (!is_Confirmed[i[1]])){
-                res[i[1]] = comenzi.front() + i[0];
-                is_Confirmed[i[1]] = 1;
-                comenzi.pop();
-            }
-        }
+    for(auto pers : people){
+        tie(pos, tim, i) = pers;
+        set<int>::iterator a = orders.lower_bound(tim - pos - d);
+        res[i] = *a + d + pos;
+        orders.erase(*a);
     }
-    f.close();
-    f.open("ramen.out", fstream::out);
-    for(auto i : res){
-        f << i.second << endl;
+    for(int i = 0; i < n; i++){
+        g << res[i] << "\n";
     }
 }
